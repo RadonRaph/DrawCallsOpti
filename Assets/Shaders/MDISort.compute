@@ -1,0 +1,114 @@
+// MDISort.compute
+// Trois kernels dispatches sequentiellement par MDIInstanceRenderer.RebuildAndDispatch()
+//
+// Kernel 0 MDICount    : compte les instances par type de mesh (atomique)
+// Kernel 1 MDIBuildArgs: prefix sum + remplissage des indirect draw args
+// Kernel 2 MDISort     : scatter des matrices triees par type de mesh
+//
+// Prerequis API : DX12 / Vulkan (unity_BaseInstanceID dans le vertex shader)
+
+#pragma kernel MDICount
+#pragma kernel MDIBuildArgs
+#pragma kernel MDISort
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Structs (doivent correspondre exactement aux structs C# dans MDIInstanceRenderer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+struct InstanceInput
+{
+    float4x4 OTW;       // ObjectToWorld  — 64 bytes
+    float4x4 WTO;       // WorldToObject  — 64 bytes
+    int      meshIndex; //                —  4 bytes
+    int      padA;      //                —  4 bytes
+    int      padB;      //                —  4 bytes
+    int      padC;      //                —  4 bytes
+    // Total : 144 bytes
+};
+
+struct SubMeshRange
+{
+    uint firstIndex;    // Offset dans le combined index buffer
+    uint indexCount;    // Nombre d'indices
+    uint baseVertex;    // Offset de base vertex
+    uint pad;           // Alignement 16 bytes
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Buffers
+// ─────────────────────────────────────────────────────────────────────────────
+
+StructuredBuffer<InstanceInput>    _InstanceInput;
+StructuredBuffer<SubMeshRange>     _SubMeshRanges;
+
+RWStructuredBuffer<uint>           _MeshCounts;    // [meshCount]   — counters atomiques
+RWStructuredBuffer<uint>           _MeshOffsets;   // [meshCount]   — startInstance par mesh
+RWStructuredBuffer<uint>           _SlotCounters;  // [meshCount]   — slots occupes (reset en BuildArgs)
+RWStructuredBuffer<float4x4>       _SortedOTW;     // [instanceCount] — matrices triees
+RWStructuredBuffer<float4x4>       _SortedWTO;     // [instanceCount] — inverses tries
+RWStructuredBuffer<uint>           _IndirectArgs;  // [meshCount*5] — draw args indirects
+
+int _InstanceCount;
+int _MeshCount;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Kernel 0 : MDICount
+// 1 thread par instance — compte atomiquement le nombre d'instances par mesh type
+// ─────────────────────────────────────────────────────────────────────────────
+
+[numthreads(64, 1, 1)]
+void MDICount(uint3 id : SV_DispatchThreadID)
+{
+    if ((int)id.x >= _InstanceCount) return;
+    int m = _InstanceInput[id.x].meshIndex;
+    InterlockedAdd(_MeshCounts[m], 1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Kernel 1 : MDIBuildArgs
+// 1 thread — prefix sum + fill indirect args + reset slot counters
+// ─────────────────────────────────────────────────────────────────────────────
+
+[numthreads(1, 1, 1)]
+void MDIBuildArgs(uint3 id : SV_DispatchThreadID)
+{
+    uint offset = 0;
+    for (int m = 0; m < _MeshCount; m++)
+    {
+        uint cnt = _MeshCounts[m];
+        _MeshOffsets[m]   = offset;
+        _SlotCounters[m]  = 0; // reset pour MDISort
+
+        // Format : indexCountPerInstance, instanceCount, startIndexLocation,
+        //          baseVertexLocation, startInstanceLocation
+        _IndirectArgs[m * 5 + 0] = _SubMeshRanges[m].indexCount;
+        _IndirectArgs[m * 5 + 1] = cnt;
+        _IndirectArgs[m * 5 + 2] = _SubMeshRanges[m].firstIndex;
+        _IndirectArgs[m * 5 + 3] = _SubMeshRanges[m].baseVertex;
+        _IndirectArgs[m * 5 + 4] = offset; // = startInstance → unity_BaseInstanceID
+
+        offset += cnt;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Kernel 2 : MDISort
+// 1 thread par instance — scatter dans les buffers tries par mesh type
+// ─────────────────────────────────────────────────────────────────────────────
+
+[numthreads(64, 1, 1)]
+void MDISort(uint3 id : SV_DispatchThreadID)
+{
+    if ((int)id.x >= _InstanceCount) return;
+
+    InstanceInput inst = _InstanceInput[id.x];
+    int m = inst.meshIndex;
+
+    // Slot atomique dans la tranche de ce mesh
+    uint slot;
+    InterlockedAdd(_SlotCounters[m], 1, slot);
+
+    uint dst = _MeshOffsets[m] + slot;
+    _SortedOTW[dst] = inst.OTW;
+    _SortedWTO[dst] = inst.WTO;
+}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PerfID — All Captures</title>
+<style>
+/* ── CSS Variables ──────────────────────────────────────────────────────── */
+:root {
+  --color-red:    #dc2626;
+  --color-orange: #ea580c;
+  --color-amber:  #ca8a04;
+  --color-green:  #16a34a;
+  --color-blue:   #2563eb;
+  --color-muted:  #9ca3af;
+  --color-dark:   #374151;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 10px;
+}
+
+/* ── Utility classes ────────────────────────────────────────────────────── */
+.h2-subtitle { font-size: 0.75rem; font-weight: 400; color: #9ca3af; }
+.text-muted  { color: #9ca3af; }
+.nowrap      { white-space: nowrap; }
+.text-right  { text-align: right; }
+.back-link   { font-size: 0.8rem; color: #6b7280; text-decoration: none; display: inline-block; margin-bottom: 4px; }
+.back-link:hover { color: #2563eb; }
+.fs-11       { font-size: 11px; }
+.fs-10       { font-size: 10px; }
+.cursor-ptr  { cursor: pointer; }
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f5f5f7; color: #111827; font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+h2 { font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 14px; color: #1e293b; letter-spacing: .03em; }
+h3 { font-size: 0.88rem; color: #6b7280; margin-bottom: 8px; }
+header { background: #fff; padding: 16px 30px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+header h1 { font-size: 1.45rem; font-weight: 700; color: #111827; }
+.subtitle { color: #6b7280; font-size: 0.8rem; margin-top: 3px; }
+.ebadge { padding: 3px 11px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; color: #fff; }
+.cbadge { padding: 2px 8px; border-radius: 8px; font-size: 0.72rem; background: #f1f5f9; color: #6b7280; border: 1px solid #e2e8f0; }
+main { max-width: 1400px; margin: 0 auto; padding: 22px 18px; }
+.section { background: #fff; border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.card { background: #f9fafb; border-radius: 8px; padding: 13px 15px; text-align: center; border: 1px solid #e2e8f0; }
+.card .val { font-size: 1.55rem; font-weight: 700; color: #2563eb; line-height: 1.1; }
+.card .lbl { font-size: 0.7rem; color: #6b7280; margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px) { .row2 { grid-template-columns: 1fr; } }
+.chart-wrap { position: relative; height: 270px; }
+.chart-wrap-tall { position: relative; height: 340px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.81rem; margin-top: 10px; }
+thead th { background: #f9fafb; color: #6b7280; font-weight: 600; padding: 7px 10px; text-align: left; cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 1px solid #e2e8f0; }
+thead th:hover { color: #2563eb; }
+td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; color: #374151; vertical-align: middle; }
+tr:hover td { background: #f0f4ff; }
+tr.flag-row td { background: #fffbeb; }
+tr.flag-row:hover td { background: #f0f4ff; }
+.sev-CRITICAL { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.sev-HIGH     { background: #ffedd5; color: #ea580c; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.sev-HIGHBG     { background: #dc2626 !important; color: #000 !important; font-weight: 600; padding: 2px 7px; white-space: nowrap; }
+.sev-MEDIUM   { background: #fefce8; color: #ca8a04; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.sev-INFO     { background: #f0fdf4; color: #16a34a; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.ds-OVERSIZED { color: #dc2626; font-weight: 700; }
+.ds-HIGH      { color: #ea580c; }
+.ds-NORMAL    { color: #16a34a; }
+.ds-LOW       { color: #9ca3af; }
+.od-HIGH   { color: #dc2626; font-weight: 700; }
+.od-MEDIUM { color: #ca8a04; }
+.od-LOW    { color: #16a34a; }
+.metric-block { display: inline-block; background: #f9fafb; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 20px; margin: 8px 8px 8px 0; min-width: 190px; }
+.metric-block .big { font-size: 2rem; font-weight: 700; }
+.metric-block .sub { font-size: 0.74rem; color: #6b7280; margin-top: 4px; }
+.feat-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.feat { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 2px 9px; border-radius: 10px; font-size: 0.73rem; }
+.note { font-size: 0.71rem; color: #9ca3af; font-style: italic; margin-top: 6px; }
+footer { text-align: center; padding: 18px; color: #9ca3af; font-size: 0.74rem; border-top: 1px solid #e2e8f0; margin-top: 10px; }
+.truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evidence-chip { display:inline-block; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:4px; padding:1px 7px; font-size:10px; font-weight:600; margin-left:8px; vertical-align:middle; }
+.warn-detail { display:block; font-size:0.78rem; color:#6b7280; font-weight:400; margin-top:3px; line-height:1.45; font-style:italic; }
+@keyframes rowPulse { 0%,100% { background:#fff; } 30% { background:#fef08a; } }
+.row-highlight { animation: rowPulse 2s ease; }
+@keyframes navFlash { 0%,100% { background:transparent; } 20% { background:#dbeafe; } }
+.nav-hl { animation: navFlash 1.8s ease; }
+tr:target td { animation: navFlash 1.8s ease; }
+.nav-link { color:#2563eb; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+.nav-link:hover { color:#1d4ed8; }
+.tex-thumb { width:52px; height:52px; object-fit:cover; border-radius:4px; border:1px solid #e2e8f0; cursor:pointer; transition:transform 0.15s; vertical-align:middle; background-image:repeating-conic-gradient(#ccc 0% 25%,#fff 0% 50%); background-size:12px 12px; }
+.tex-thumb:hover { transform:scale(1.06); }
+.thumb-pop { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 40px rgba(0,0,0,0.18); padding:12px; z-index:9999; max-width:90vw; max-height:90vh; }
+.thumb-pop img { max-width:80vw; max-height:80vh; display:block; border-radius:6px; }
+.thumb-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9998; }
+.pat-ev { font-size:0.72rem; color:#6b7280; margin-top:8px; padding:8px 12px; background:#f9fafb; border-radius:6px; border:1px solid #e2e8f0; }
+.pat-ev li { margin-left:16px; margin-top:2px; }
+[data-tooltip] { position:relative; cursor:help; border-bottom:1px dotted #9ca3af; }
+[data-tooltip]::after { content:attr(data-tooltip); position:absolute; background:#1f2937; color:#f9fafb; padding:6px 10px; border-radius:6px; font-size:11px; bottom:125%; left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; transition:opacity 0.2s; max-width:280px; white-space:normal; z-index:9999; line-height:1.4; box-shadow:0 2px 8px rgba(0,0,0,0.25); width:max-content; }
+[data-tooltip]:hover::after { opacity:1; }
+.context-bar { background:#1e293b; color:#cbd5e1; font-size:0.74rem; display:flex; flex-wrap:wrap; gap:0; border-bottom:1px solid #334155; }
+.ctx-item { padding:6px 16px; border-right:1px solid #334155; display:flex; align-items:center; gap:5px; }
+.ctx-item:last-child { border-right:none; }
+.ue5-badge { display:inline-block; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; margin-left:5px; vertical-align:middle; border:1px solid; cursor:help; }
+.ue5-Nanite    { background:#ede9fe; color:#6d28d9; border-color:#c4b5fd; }
+.ue5-Lumen     { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.ue5-TSR       { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.ue5-VSM       { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+.ue5-Substrate { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.ue5-PathTracer{ background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.role-tag { display:inline-block; font-size:10px; font-weight:600; padding:1px 7px; border-radius:10px; border:1px solid; }
+.role-VT_PageTable  { background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.role-VT_Physical   { background:#ede9fe; color:#5b21b6; border-color:#c4b5fd; }
+.role-SceneColour   { background:#fef3c7; color:#b45309; border-color:#fde68a; }
+.role-VolumeTexture { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.role-VSMPageTable  { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+.role-DepthBuffer   { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+.role-RenderTarget  { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+.role-Normal        { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.role-Albedo        { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.role-Depth         { background:#f9f9f9; color:#6b7280; border-color:#e5e7eb; }
+.role-HDR           { background:#fdf4ff; color:#9333ea; border-color:#e9d5ff; }
+.role-Grayscale     { background:#f9fafb; color:#6b7280; border-color:#e5e7eb; }
+.grade-A { border-top: 3px solid #16a34a; }
+.grade-B { border-top: 3px solid #65a30d; }
+.grade-C { border-top: 3px solid #ca8a04; }
+.grade-D { border-top: 3px solid #ea580c; }
+.grade-F { border-top: 3px solid #dc2626; }
+.plain-eng { font-size:0.78rem; color:#374151; margin-top:4px; line-height:1.5; background:#f9fafb; padding:6px 10px; border-radius:6px; border-left:3px solid #2563eb; }
+.pass-type-compute { color:#7c3aed; font-weight:600; font-size:11px; }
+.pass-type-mixed   { color:#0891b2; font-weight:600; font-size:11px; }
+.pass-type-render  { color:#2563eb; font-weight:600; font-size:11px; }
+.pass-type-copy    { color:#6b7280; font-weight:600; font-size:11px; }
+.tgt-Framebuffer   { color:#16a34a; font-size:11px; font-weight:600; }
+.tgt-RenderTexture { color:#ca8a04; font-size:11px; font-weight:600; }
+.tgt-Compute       { color:#7c3aed; font-size:11px; font-weight:600; }
+.tgt-Mixed         { color:#0891b2; font-size:11px; font-weight:600; }
+.tgt-Render        { color:#6b7280; font-size:11px; }
+.tgt-Copy          { color:#94a3b8; font-size:11px; }
+.inst-hi  { color:#dc2626; font-weight:600; }
+.inst-med { color:#ca8a04; }
+.inst-ok  { color:#374151; }
+.throughput-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.tp-card { background:#f9fafb; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; min-width:130px; }
+.tp-card .tp-val { font-size:1.25rem; font-weight:700; color:#1e293b; }
+.tp-card .tp-lbl { font-size:0.68rem; color:#6b7280; margin-top:2px; }
+.tp-card .tp-unit { font-size:0.72rem; color:#9ca3af; }
+.bottleneck-SM  { background:#fee2e2; border-color:#fca5a5; }
+.bottleneck-BW  { background:#fff7ed; border-color:#fed7aa; }
+.bottleneck-Tex { background:#fefce8; border-color:#fde68a; }
+.bottleneck-Bal { background:#f0fdf4; border-color:#bbf7d0; }
+.bc-badge { display:inline-block; background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; border-radius:4px; padding:0 5px; font-size:10px; font-weight:700; margin-left:3px; vertical-align:middle; }
+.mip-warn { display:inline-block; color:#ca8a04; font-size:11px; margin-left:4px; vertical-align:middle; cursor:help; }
+.usage-badge { display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:10px; margin:1px 2px; vertical-align:middle; border:1px solid; background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
+.usage-DepthBuffer   { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+.usage-RenderTarget  { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+.usage-BCCompressed  { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.usage-VirtualTexture{ background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.usage-Lightmap      { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.usage-NormalMap     { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.usage-UI            { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.usage-Volume        { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+/* Pass feature badges */
+.ue5-Shadows     { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
+.ue5-DepthPrepass{ background:#f9f9f9; color:#6b7280; border-color:#e5e7eb; }
+.ue5-GBuffer     { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.ue5-SSAO        { background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.ue5-AO          { background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.ue5-Bloom       { background:#fef3c7; color:#b45309; border-color:#fde68a; }
+.ue5-Tonemap     { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+.ue5-PostProcess { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.ue5-Transparency{ background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.ue5-VFX         { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+.ue5-UI          { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.ue5-Sky         { background:#e0f2fe; color:#0369a1; border-color:#bae6fd; }
+.ue5-Reflections { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+.ue5-HZB         { background:#f9fafb; color:#6b7280; border-color:#e5e7eb; }
+.ue5-Occlusion   { background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
+.ue5-MotionBlur  { background:#fdf4ff; color:#6b21a8; border-color:#e9d5ff; }
+.ue5-Velocity    { background:#fdf4ff; color:#6b21a8; border-color:#e9d5ff; }
+.ue5-RenderGraph { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.ue5-SRPBatcher  { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+.ue5-URP         { background:#ede9fe; color:#5b21b6; border-color:#c4b5fd; }
+.show-more-btn { margin-top:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 14px; font-size:0.78rem; color:#374151; cursor:pointer; }
+.show-more-btn:hover { background:#e2e8f0; }
+.tbl-filter { width:100%; max-width:340px; padding:5px 10px; font-size:0.8rem; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:6px; outline:none; }
+.tbl-filter:focus { border-color:#2563eb; box-shadow:0 0 0 2px #bfdbfe; }
+a.res-link { color:#2563eb; text-decoration:none; font-weight:500; }
+a.res-link:hover { text-decoration:underline; }
+.heatmap-img { max-width:100%; border-radius:6px; border:1px solid #e2e8f0; margin-top:8px; }
+.nav-bar { background:#fff; border-bottom:1px solid #e2e8f0; padding:0 30px; display:flex; gap:0; font-size:0.8rem; overflow-x:auto; }
+.nav-bar a { padding:9px 16px; color:#6b7280; text-decoration:none; border-bottom:2px solid transparent; white-space:nowrap; }
+.nav-bar a:hover { color:#2563eb; border-bottom-color:#bfdbfe; }
+.section-intro { font-size:0.82rem; color:#374151; background:#f8fafc; border-left:3px solid #2563eb; border-radius:0 6px 6px 0; padding:8px 12px; margin-bottom:14px; line-height:1.6; }
+.res-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+.res-tab-btn { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 12px; font-size:0.78rem; color:#374151; cursor:pointer; white-space:nowrap; }
+.res-tab-btn:hover { background:#e2e8f0; }
+.res-tab-btn.active { background:#2563eb; color:#fff; border-color:#2563eb; font-weight:600; }
+.res-tab-heading { font-size:0.82rem; color:#475569; font-weight:600; margin:10px 0 6px; padding-top:8px; border-top:1px solid #f1f5f9; }
+.role-badge { display:inline-block; font-size:10px; font-weight:700; padding:1px 7px; border-radius:10px; border:1px solid; white-space:nowrap; }
+.role-shadow      { background:#fef2f2; color:#991b1b; border-color:#fca5a5; }
+.role-depth       { background:#f9fafb; color:#6b7280; border-color:#e5e7eb; }
+.role-gbuffer     { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.role-lighting    { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+.role-postprocess { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+.role-transparency{ background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.role-forward     { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.role-compute     { background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+.role-render      { background:#f1f5f9; color:#374151; border-color:#cbd5e1; }
+.draw-detail-pop { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,0.18); padding:20px 24px; z-index:10000; min-width:460px; max-width:700px; max-height:85vh; overflow-y:auto; }
+@media (max-width:540px) { .draw-detail-pop { min-width:calc(100vw - 32px); max-width:calc(100vw - 32px); } }
+#viewToggle { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 12px; font-size:0.78rem; color:#374151; cursor:pointer; margin-left:10px; white-space:nowrap; }
+#viewToggle:hover { background:#e2e8f0; }
+body[data-view="simple"] .adv-only { display:none !important; }
+/* ── Index-specific styles ─────────────────────────────────────────────── */
+.index-header { background:#fff; padding:18px 30px; border-bottom:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+.index-header h1 { font-size:1.45rem; font-weight:700; color:#111827; }
+.index-header .subtitle { color:#6b7280; font-size:0.8rem; margin-top:3px; }
+
+.capture-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+.capture-table thead th { background:#f9fafb; color:#6b7280; font-weight:600; padding:8px 12px; text-align:left; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+.capture-table tbody tr { cursor:pointer; transition:background 0.1s; }
+.capture-table tbody tr:hover td { background:#f0f4ff; }
+.capture-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; color:#374151; vertical-align:middle; }
+
+.grade-badge { display:inline-block; width:32px; height:32px; line-height:32px; text-align:center; border-radius:50%; font-weight:700; font-size:1rem; color:#fff; }
+.grade-A, .grade-B { background:#16a34a; }
+.grade-C { background:#ca8a04; }
+.grade-D, .grade-F { background:#dc2626; }
+
+.warn-crit { color:#dc2626; font-weight:700; }
+.warn-high { color:#ea580c; font-weight:600; }
+.warn-ok   { color:#9ca3af; }
+
+.engine-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+.best-card { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-radius:10px; padding:14px 18px; margin-bottom:18px; display:flex; align-items:center; gap:16px; }
+.best-card .best-label { font-size:0.72rem; font-weight:700; color:#16a34a; text-transform:uppercase; letter-spacing:0.05em; }
+.best-card .best-name { font-size:1rem; font-weight:700; color:#111827; }
+.best-card .best-sub  { font-size:0.78rem; color:#6b7280; margin-top:2px; }
+</style>
+</head>
+<body data-view="simple">
+
+<div class="index-header">
+  <h1>PerfID — All Captures</h1>
+  <div class="subtitle">4 captures &nbsp;·&nbsp; 2026-04-12 13:15</div>
+</div>
+
+<main>
+
+<div class="best-card">
+  <div class="grade-badge grade-B">B</div>
+  <div>
+    <div class="best-label">Best capture</div>
+    <div class="best-name">Instancing</div>
+    <div class="best-sub">
+      98 pts &nbsp;·&nbsp;
+      0 critical &nbsp;·&nbsp;
+      0 high &nbsp;·&nbsp;
+      573 draws &nbsp;·&nbsp;
+      143.6 MB VRAM
+    </div>
+  </div>
+  <div style="margin-left:auto">
+    <a href="Instancing_report.html" style="background:#16a34a;color:#fff;padding:7px 16px;border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">Open Report →</a>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Captures
+    <span class="h2-subtitle">— click a row to open the individual report</span>
+  </h2>
+
+  <table class="capture-table" id="idxTbl">
+    <thead>
+      <tr>
+        <th onclick="idxSort(0)">Capture</th>
+        <th onclick="idxSort(1)">Date</th>
+        <th onclick="idxSort(2)">GPU</th>
+        <th onclick="idxSort(3)">Resolution</th>
+        <th onclick="idxSort(4)">Engine</th>
+        <th onclick="idxSort(5)" style="text-align:center">Grade</th>
+        <th onclick="idxSort(6)" style="text-align:center" title="Critical warnings">⚠ Crit</th>
+        <th onclick="idxSort(7)" style="text-align:center" title="High warnings">⚠ High</th>
+        <th onclick="idxSort(8)" style="text-align:right">Draws</th>
+        <th onclick="idxSort(9)" style="text-align:right">VRAM</th>
+        <th onclick="idxSort(10)" style="text-align:right">GPU ms</th>
+      </tr>
+    </thead>
+    <tbody>
+    <tr onclick="window.location='Classic_report.html'">
+      <td><a href="Classic_report.html" style="color:#2563eb;font-weight:600;text-decoration:none">Classic</a></td>
+      <td class="text-muted" style="font-size:11px;white-space:nowrap">2026-04-12 10:59</td>
+      <td style="font-size:11px">NVIDIA GPU (name unavailable)</td>
+      <td class="nowrap" style="font-size:11px">
+2560×1440      </td>
+      <td style="font-size:11px">
+        <span class="engine-dot" style="background:#374151"></span>Unity
+      </td>
+      <td style="text-align:center">
+        <span class="grade-badge grade-B" title="Good — minor issues worth investigating.">B</span>
+      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:right">2,459</td>
+      <td style="text-align:right;white-space:nowrap">148.4 MB</td>
+      <td style="text-align:right;white-space:nowrap">
+12.41 ms      </td>
+    </tr>
+    <tr onclick="window.location='Instancing_report.html'">
+      <td><a href="Instancing_report.html" style="color:#2563eb;font-weight:600;text-decoration:none">Instancing</a></td>
+      <td class="text-muted" style="font-size:11px;white-space:nowrap">2026-04-12 11:07</td>
+      <td style="font-size:11px">NVIDIA GPU (name unavailable)</td>
+      <td class="nowrap" style="font-size:11px">
+2560×1440      </td>
+      <td style="font-size:11px">
+        <span class="engine-dot" style="background:#374151"></span>Unity
+      </td>
+      <td style="text-align:center">
+        <span class="grade-badge grade-B" title="Good — minor issues worth investigating.">B</span>
+      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:right">573</td>
+      <td style="text-align:right;white-space:nowrap">143.6 MB</td>
+      <td style="text-align:right;white-space:nowrap">
+8.52 ms      </td>
+    </tr>
+    <tr onclick="window.location='VAT_report.html'">
+      <td><a href="VAT_report.html" style="color:#2563eb;font-weight:600;text-decoration:none">VAT</a></td>
+      <td class="text-muted" style="font-size:11px;white-space:nowrap">2026-04-12 11:08</td>
+      <td style="font-size:11px">NVIDIA GPU (name unavailable)</td>
+      <td class="nowrap" style="font-size:11px">
+2560×1440      </td>
+      <td style="font-size:11px">
+        <span class="engine-dot" style="background:#374151"></span>Unity
+      </td>
+      <td style="text-align:center">
+        <span class="grade-badge grade-B" title="Good — minor issues worth investigating.">B</span>
+      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:right">572</td>
+      <td style="text-align:right;white-space:nowrap">144.1 MB</td>
+      <td style="text-align:right;white-space:nowrap">
+7.36 ms      </td>
+    </tr>
+    <tr onclick="window.location='VFX_report.html'">
+      <td><a href="VFX_report.html" style="color:#2563eb;font-weight:600;text-decoration:none">VFX</a></td>
+      <td class="text-muted" style="font-size:11px;white-space:nowrap">2026-04-12 11:10</td>
+      <td style="font-size:11px">NVIDIA GPU (name unavailable)</td>
+      <td class="nowrap" style="font-size:11px">
+2560×1440      </td>
+      <td style="font-size:11px">
+        <span class="engine-dot" style="background:#374151"></span>Unity
+      </td>
+      <td style="text-align:center">
+        <span class="grade-badge grade-B" title="Good — minor issues worth investigating.">B</span>
+      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:center">
+<span class="warn-ok">0</span>      </td>
+      <td style="text-align:right">573</td>
+      <td style="text-align:right;white-space:nowrap">266.5 MB</td>
+      <td style="text-align:right;white-space:nowrap">
+6.86 ms      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+
+<footer style="text-align:center;padding:14px;font-size:0.72rem;color:#9ca3af;border-top:1px solid #e2e8f0;margin-top:10px">
+  Generated by PerfID &nbsp;·&nbsp; 2026-04-12 13:15 &nbsp;·&nbsp; A tool created by Raphael Horion &copy; All rights reserved 2026.
+</footer>
+
+<script>
+var _idxDir = {};
+function idxSort(col) {
+  var tbl   = document.getElementById("idxTbl");
+  var tbody = tbl.tBodies[0];
+  var rows  = Array.from(tbody.rows);
+  var asc   = !_idxDir[col];
+  _idxDir   = {};
+  _idxDir[col] = asc;
+  rows.sort(function(a, b) {
+    var av = (a.cells[col] ? a.cells[col].textContent : "").trim();
+    var bv = (b.cells[col] ? b.cells[col].textContent : "").trim();
+    var an = parseFloat(av.replace(/[^0-9.\-]/g, "")),
+        bn = parseFloat(bv.replace(/[^0-9.\-]/g, ""));
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
+    return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  rows.forEach(function(r) { tbody.appendChild(r); });
+  var ths = tbl.tHead.rows[0].cells;
+  Array.from(ths).forEach(function(th, i) {
+    var t = th.textContent.replace(/[ ▲▼]+$/, "").trim();
+    th.textContent = i == col ? t + (asc ? " ▲" : " ▼") : t;
+  });
+}
+</script>
+
+</body>
+</html>

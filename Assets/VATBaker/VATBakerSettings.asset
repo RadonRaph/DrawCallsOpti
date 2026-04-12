@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79d48013de7db4b4fbf0c44389f11d97, type: 3}
+  m_Name: VATBakerSettings
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::VATBaker.VATBakerSettings
+  sourceMeshes:
+  - {fileID: 2341495138360658118, guid: ee484404b8307c24298a3d7898004879, type: 3}
+  - {fileID: 5292590131479047705, guid: ce52348278457d0429fbcb074b408b81, type: 3}
+  - {fileID: -4038059632633745876, guid: b16c9088a2490eb43a7282da48d8fb25, type: 3}
+  - {fileID: 2877166761697098136, guid: 74471acd768e67c4cab7c43d211b5f08, type: 3}
+  - {fileID: -917911441708352487, guid: 9be3a720afc01d84f80c62fdb8b23b18, type: 3}
+  - {fileID: -4451102010757998781, guid: e71e3896688ec9b44b1989b2c522c773, type: 3}
+  outputPath: Assets/VATBaker/Generated
+  flattenSubmeshes: 1
+  useFullFloatPrecision: 0
