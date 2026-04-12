@@ -146,6 +146,12 @@ Assets/
 
 ---
 
+## Credits
+
+Assets use for benchmark are the wonderful Kenney's Assets [Kenney's Website](https://kenney.nl/assets/city-kit-suburban).
+
+---
+
 ## Performance Benchmarks
 
 The following benchmarks provide a comparative analysis of different configurations across various scenarios.
