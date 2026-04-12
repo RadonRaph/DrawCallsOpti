@@ -143,3 +143,30 @@ Assets/
     ├── VFXInstance.cs               — per-instance component (VFX Graph)
     └── VFXGraphRenderer.cs          — central manager + buffer builder (VFX Graph)
 ```
+
+---
+
+## Performance Benchmarks
+
+The following benchmarks provide a comparative analysis of different configurations across various scenarios.
+
+### Key Observations
+* **Hardware Sensitivity:** Vertex Animation Textures (VAT) provide a performance uplift **exclusively on modern hardware**. On older architectures, GPU Instancing remains more efficient or equivalent.
+* **Mesh Variety & Scaling:** VAT is the optimal choice for scenarios requiring **high mesh diversity** or high instance counts with **low to medium polygon density**. It scales significantly better than standard instancing when handling many distinct animated models.
+* **VFX Graph:** This serves as a high-performance, "low-code" alternative to Indirect/GPU Instancing, offering native support for instance variation and efficient **GPU Culling**.
+
+### Contributions
+Community data is welcome. To contribute your own benchmark results, please submit a **Pull Request**.
+
+---
+
+### Hardware Comparison Results
+
+#### NVIDIA GeForce RTX 3080
+![Benchmark on a 3080](Imgs/3080.jpg)
+
+#### NVIDIA GeForce GTX 1660 Super
+![Benchmark on a 1660 Super](Imgs/1660S.png)
+
+#### NVIDIA GeForce GTX 1060 6GB
+![Benchmark on a 1060 6GB](Imgs/1060_6GB.png)
