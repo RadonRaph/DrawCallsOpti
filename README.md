@@ -12,7 +12,7 @@ Press **F** at runtime to cycle through modes. A HUD displays FPS, CPU, GPU and 
 | 0 | **Classic** | `MeshRenderer` per instance | 1 per instance |
 | 1 | **GPU Instancing** | `InstancingInstanceRenderer` | 1 per unique mesh |
 | 2 | **VAT** | `VATInstanceRenderer` | 1 total |
-| 3 | **VFX Graph** | `MDIInstanceRenderer` | handled by VFX |
+| 3 | **VFX Graph** | `VFXGraphRenderer` | handled by VFX |
 
 ### Classic
 Standard Unity MeshRenderers on a dedicated **"Classic"** layer. No special setup.  
@@ -31,7 +31,7 @@ This eliminates all per-instance draw calls at the cost of a baking step and som
 
 ### VFX Graph
 A single `VisualEffect` component receives all instance data through a typed `GraphicsBuffer`.  
-`MDIInstanceRenderer` builds the buffer every time the instance list changes and calls `Reinit()` on the VFX so it spawns exactly N particles, each reading its transform and mesh index from the buffer.
+`VFXGraphRenderer` builds the buffer every time the instance list changes and calls `Reinit()` on the VFX so it spawns exactly N particles, each reading its transform and mesh index from the buffer.
 
 > **What makes VFX Graph different here:** the rendering pipeline (mesh selection, material, lighting) is entirely defined inside the VFX asset. The C# side is purely a data pump.
 
@@ -63,7 +63,7 @@ Each rendering mode needs exactly one manager in the scene:
 |-----------|---------|
 | `VATInstanceRenderer` | `vatBaseMesh`, `vatMaterial` |
 | `InstancingInstanceRenderer` | `instancingMaterial` |
-| `MDIInstanceRenderer` | `vfxAsset`, `sourceMeshes[]` |
+| `VFXGraphRenderer` | `vfxAsset`, `sourceMeshes[]`, `mainTexture` |
 
 Wire them to **BenchmarkHUD** so the F key can toggle modes.
 
@@ -90,11 +90,6 @@ Output assets land in `Assets/VATBaker/Generated/` by default.
 > **Important settings:**  
 > - *Flatten Submeshes* — merge all submeshes into one before expanding (recommended)  
 > - *Full Float Precision* — use `RGBAFloat` instead of `RGBAHalf` if you see precision artifacts on large meshes
-
-### MDI Baker — `Tools → MDI Baker`
-Merges all source meshes into a single **combined mesh** and writes an `MDIBakerData` asset that stores each sub-mesh's index range.
-
-**Why:** the old Multi-Draw Indirect path needed all geometry in one buffer with known offsets per mesh type. The baker automates that merge. The resulting assets are still referenced by `MDIBakerData` even though the VFX Graph mode no longer uses them for rendering — they can be safely ignored or deleted if MDI is fully retired.
 
 ---
 
@@ -141,13 +136,10 @@ Assets/
 │   ├── VATInstanceRenderer.cs       — central manager (VAT)
 │   ├── InstancingRenderer.cs        — per-instance component (GPU Instancing)
 │   ├── InstancingInstanceRenderer.cs— central manager (GPU Instancing)
-│   ├── MDIRenderer.cs               — per-instance component (VFX Graph)
-│   └── MDIInstanceRenderer.cs       — central manager + buffer builder (VFX Graph)
 ├── VATBaker/
-│   └── Editor/                      — VAT baker pipeline
-├── MDIBaker/
-│   ├── MDIBakerData.cs              — bake data asset (sub-mesh ranges)
-│   └── Editor/                      — MDI baker pipeline
-└── MDIGraph/
-    └── MDIGraph.vfx                 — VFX Graph asset
+│   └── Editor/                      — VAT baker pipeline                    — MDI baker pipeline
+└── MultiMeshesGraph/
+    ├── MDIGraph.vfx                 — VFX Graph asset
+    ├── VFXInstance.cs               — per-instance component (VFX Graph)
+    └── VFXGraphRenderer.cs          — central manager + buffer builder (VFX Graph)
 ```
