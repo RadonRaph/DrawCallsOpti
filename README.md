@@ -95,7 +95,7 @@ Output assets land in `Assets/VATBaker/Generated/` by default.
 
 ## VFX Graph Setup
 
-The VFX asset (`Assets/MDIGraph/MDIGraph.vfx`) needs to be wired to read from the C#-side buffer.
+The VFX asset (`Assets/MultiMeshesGraph/MultiMeshesGraph.vfx`) needs to be wired to read from the C#-side buffer.
 
 ### Blackboard properties to expose
 | Name | Type |
@@ -104,24 +104,8 @@ The VFX asset (`Assets/MDIGraph/MDIGraph.vfx`) needs to be wired to read from th
 | `InstanceCount` | `int` |
 | `MeshA` … `MeshF` | `Mesh` |
 
-`VFXInstanceData` is defined in `MDIInstanceRenderer.cs` with `[VFXType(VFXTypeOptions.GraphicsBuffer)]`, which makes it appear as a selectable type inside the VFX Graph editor.
+`VFXInstanceData` is defined in `VFXGraphRenderer.cs` with `[VFXType(VFXTypeAttribute.Usage.GraphicsBuffer)]`, which makes it appear as a selectable type inside the VFX Graph editor.
 
-### Initialize context
-Replace the existing **Constant Rate** spawner with a **Single Burst** whose Count is driven by the `InstanceCount` parameter.  
-In the Initialize context, add a **Get Buffer Element** operator pointing to `InstanceBuffer` at index `particleId`, then wire its output fields to **Set Attribute** blocks:
-
-| Buffer field | VFX attribute |
-|-------------|---------------|
-| `position` | `position` |
-| `angles` | `angles` (euler degrees) |
-| `scale` | `scale` |
-| `meshIndex` | `TargetMeshIndex` (custom) |
-
-Set particle lifetime to **infinite** (remove any Kill Age block) so particles persist between `Reinit()` calls.
-
-### Update & Output
-The Update context can remain empty for static instances.  
-The existing **URP Lit Mesh Output** block already reads `TargetMeshIndex` to select the mesh from `MeshA`…`MeshF` per particle.
 
 ---
 
